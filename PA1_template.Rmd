@@ -27,5 +27,9 @@ abline(v=median.spd, col = c("blue"), lty = 2)
 
 Average daily activity pattern
 
-
+```{r, echo=T}
+spi <- ddply(d, .(interval), summarize, steps = mean(steps, na.rm=TRUE))
+max.spi <- max(spi$steps)
+max.int <- spi[spi$steps==max(max.spi),1]
+```
 
