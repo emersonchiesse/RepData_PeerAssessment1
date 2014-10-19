@@ -1,25 +1,31 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+Coursera - Reproducible Research Project
+===================
+by Emerson Chiesse
 
 
-## Loading and preprocessing the data
+Loading data:
+
+```{r}
+d=read.csv("activity.csv", sep=",",header=TRUE)
+summary(d)
+```
+
+
+Mean total steps per day
+
+```{r, echo=T}
+library(plyr)
+spd <- ddply(d, .(date), summarize, steps = sum(steps))
+mean.spd <- mean(spd$steps, na.rm = TRUE)
+median.spd <- median(spd$steps, na.rm = TRUE)
+
+hist(spd$steps, xlab="Total number of steps per day", main=NULL, col="light blue")
+abline(v=mean.spd, col = c("red"))
+abline(v=median.spd, col = c("blue"), lty = 2)
+```
+
+
+Average daily activity pattern
 
 
 
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
