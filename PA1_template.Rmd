@@ -1,35 +1,155 @@
-Coursera - Reproducible Research Project
-===================
-by Emerson Chiesse
+---
+title: "Reproducible Research-Assessment 1"
+author: "Emerson Chiesse"
+date: "11/16/2014"
+output: html_document
+---
 
+# Reproducible Research Assessment 1
 
-Loading data:
+## Introduction
 
-```{r}
-d=read.csv("activity.csv", sep=",",header=TRUE)
-summary(d)
-```
+This document shows how to reproduce a research, following as learned at Reproducible Research course at Coursera website.
 
-
-Mean total steps per day
-
-```{r, echo=T}
-library(plyr)
-spd <- ddply(d, .(date), summarize, steps = sum(steps))
-mean.spd <- mean(spd$steps, na.rm = TRUE)
-median.spd <- median(spd$steps, na.rm = TRUE)
-
-hist(spd$steps, xlab="Total number of steps per day", main=NULL, col="light blue")
-abline(v=mean.spd, col = c("red"))
-abline(v=median.spd, col = c("blue"), lty = 2)
-```
-
-
-Average daily activity pattern
+### Loading and preprocessing the data
+Fist, we need to load the data:
 
 ```{r, echo=T}
-spi <- ddply(d, .(interval), summarize, steps = mean(steps, na.rm=TRUE))
-max.spi <- max(spi$steps)
-max.int <- spi[spi$steps==max(max.spi),1]
+setwd("~/coursera/reproducible research/assesment1v2")
+url="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+#download.file (url, destfile = "repdata.zip", method="wget")
+#unzip ("repdata.zip")
+data=read.csv("activity.csv", header = T)
 ```
 
+### What is mean total number of steps taken per day?
+After load raw data, it needs to be processed. Steps will be grouped by days, with aggregate function as shown here:
+
+
+```{r, echo=T}
+steps=aggregate(steps ~ date, data, sum)
+```
+
+
+Now, plotting the result with a histogram:
+
+```{r, echo=T}
+hist(steps$steps, xlab = "Steps per day")
+```
+
+
+To calculate the mean:
+
+```{r, echo=T}
+mean(steps$steps, na.rm = TRUE)
+```
+
+To calculate the median:
+
+```{r, echo=T}
+median(steps$steps, na.rm = TRUE)
+```
+
+
+### What is the average daily activity pattern?
+
+```{r, echo=T}
+library(ggplot2)
+avg=aggregate (x=list(steps=data$steps), by=list(interval=data$interval), FUN=mean, na.rm=T)
+ggplot(avg,aes(x=interval, y=steps))+ geom_line() + xlab("5-minute interval") +     ylab("Average number of steps taken")
+```
+
+The maximun number of steps are on the following interval, with number of steps:
+
+```{r, echo=T}
+avg[which.max(avg$steps), ]
+```
+
+
+
+### Imputing missing values
+
+How much values are not available in dataset?
+
+```{r, echo=T}
+sum(is.na(data$steps))
+```
+
+
+Filling data on records with NA value:
+
+First, copy original dataset:
+```{r, echo=T}
+datafull = data
+```
+
+Second, apply a function to fill a value on a NA record:
+
+```{r, echo=T}
+fill = function(steps, interval) {
+  filled = NA
+  if (!is.na(steps)) 
+    filled = c(steps) else filled = (avg[avg$interval == interval, "steps"])
+  return(filled)
+}
+datafull$steps=mapply(fill, datafull$steps, datafull$interval)
+```
+
+Finnaly, reproduce same steps on the dataset full:
+
+```{r, echo=T}
+steps=aggregate(steps ~ date, datafull, sum)
+```
+
+
+Now, plotting the result with a histogram:
+
+```{r, echo=T}
+hist(steps$steps, xlab = "Steps per day")
+```
+
+
+To calculate the mean:
+
+```{r, echo=T}
+mean(steps$steps, na.rm = TRUE)
+```
+To calculate the median:
+
+```{r, echo=T}
+median(steps$steps, na.rm = TRUE)
+```
+
+
+
+### Are there differences in activity patterns between weekdays and weekends?
+
+
+For this, first we need to know what day of week for each record:
+
+```{r, echo=T}
+weekday.or.weekend <- function(date) {
+  day <- weekdays(date)
+  if (day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")) 
+    return("weekday") else if (day %in% c("Saturday", "Sunday")) 
+      return("weekend") else stop("invalid date")
+}
+datafull$date <- as.Date(datafull$date)
+datafull$day <- sapply(datafull$date, FUN = weekday.or.weekend)
+
+
+```
+
+After that, we need to group by weekend or workday:
+
+```{r, echo=T}
+averages <- aggregate(steps ~ interval + day, data = datafull, mean)
+```
+
+And finnaly, compare results:
+
+```{r, echo=T}
+ggplot(averages, aes(interval, steps)) + geom_line() + facet_grid(day ~ .) + 
+  xlab("5-minute interval") + ylab("Number of steps")
+
+```
